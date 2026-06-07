@@ -32,3 +32,7 @@ clean_tsibble <- df %>%
   as_tsibble(key = c(State, City), index = `Time Periods`)
 
 saveRDS(clean_tsibble, "data/processed/clean_tsibble.rds")
+
+# Also save a copy inside the app directory so it gets bundled for cloud deployment
+dir.create("app/data", showWarnings = FALSE, recursive = TRUE)
+saveRDS(clean_tsibble, "app/data/clean_tsibble.rds")

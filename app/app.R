@@ -2,12 +2,14 @@
 library(shiny)
 library(bslib)
 library(fpp3)
+library(plotly)
+library(DT)
 
 # Load pre-computed data
 eda_features <- readRDS("data/eda_features.rds")
 stl_components <- readRDS("data/stl_components.rds")
 forecasts <- readRDS("data/forecasts.rds")
-clean_tsibble <- readRDS("../data/processed/clean_tsibble.rds")
+clean_tsibble <- readRDS("data/clean_tsibble.rds")
 
 ui <- page_navbar(
   title = "EXL PM 2.5 Real-Time Predictor",
@@ -57,19 +59,19 @@ By combining robust seasonal decomposition with exogenous variable forecasting, 
     navset_card_tab(
       nav_panel("Advanced Statistics",
         navset_pill(
-          nav_panel("Basic Metrics", tableOutput("stats_basic")),
-          nav_panel("Trend & Seasonality (STL)", tableOutput("stats_stl")),
-          nav_panel("Autocorrelation (ACF)", tableOutput("stats_acf"))
+          nav_panel("Basic Metrics", DTOutput("stats_basic")),
+          nav_panel("Trend & Seasonality (STL)", DTOutput("stats_stl")),
+          nav_panel("Autocorrelation (ACF)", DTOutput("stats_acf"))
         )
       ),
       nav_panel("Time Plot",
-        plotOutput("time_plot")
+        plotlyOutput("time_plot")
       ),
       nav_panel("Seasonal Plots",
         navset_pill(
-          nav_panel("Daily Pattern (14 Days)", plotOutput("season_plot_daily")),
-          nav_panel("Weekly Pattern (4 Weeks)", plotOutput("season_plot_weekly")),
-          nav_panel("Annual Pattern", plotOutput("season_plot_annual"))
+          nav_panel("Daily Pattern (14 Days)", plotlyOutput("season_plot_daily")),
+          nav_panel("Weekly Pattern (4 Weeks)", plotlyOutput("season_plot_weekly")),
+          nav_panel("Annual Pattern", plotlyOutput("season_plot_annual"))
         )
       ),
       nav_panel("STL Decomposition",
@@ -81,7 +83,7 @@ By combining robust seasonal decomposition with exogenous variable forecasting, 
   nav_panel("Forecasts",
     card(
       card_header(textOutput("forecast_header")),
-      plotOutput("forecast_plot")
+      plotlyOutput("forecast_plot")
     )
   )
 )
@@ -97,35 +99,44 @@ server <- function(input, output, session) {
     updateSliderInput(session, "horizon_slider", value = input$horizon_num)
   })
   
-  # --- Advanced Statistics Tables (Grouped) ---
+  # --- Advanced Statistics Tables (Grouped & Interactive) ---
   
   city_features <- reactive({
     eda_features %>% filter(City == input$city)
   })
   
   # Group 1: Basic Metrics
-  output$stats_basic <- renderTable({
+  output$stats_basic <- renderDT({
     req(nrow(city_features()) > 0)
     city_features() %>%
       select(starts_with("Mean_"), starts_with("Median_"), starts_with("Max_"), starts_with("P90_")) %>%
-      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value")
-  }, digits = 2, striped = TRUE, hover = TRUE, bordered = TRUE)
+      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value") %>%
+      datatable(options = list(dom = 't', paging = FALSE), 
+                class = 'cell-border stripe hover', rownames = FALSE) %>%
+      formatRound(columns = "Value", digits = 2)
+  })
   
   # Group 2: STL Features (Trend and Seasonality strength)
-  output$stats_stl <- renderTable({
+  output$stats_stl <- renderDT({
     req(nrow(city_features()) > 0)
     city_features() %>%
       select(contains("strength"), contains("peak"), contains("trough"), spikiness, linearity, curvature) %>%
-      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value")
-  }, digits = 3, striped = TRUE, hover = TRUE, bordered = TRUE)
+      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value") %>%
+      datatable(options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
+                class = 'cell-border stripe hover', rownames = FALSE) %>%
+      formatRound(columns = "Value", digits = 3)
+  })
   
   # Group 3: ACF Features (Autocorrelation)
-  output$stats_acf <- renderTable({
+  output$stats_acf <- renderDT({
     req(nrow(city_features()) > 0)
     city_features() %>%
       select(contains("acf")) %>%
-      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value")
-  }, digits = 3, striped = TRUE, hover = TRUE, bordered = TRUE)
+      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value") %>%
+      datatable(options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
+                class = 'cell-border stripe hover', rownames = FALSE) %>%
+      formatRound(columns = "Value", digits = 3)
+  })
   
   # --- Interactive Plots ---
   

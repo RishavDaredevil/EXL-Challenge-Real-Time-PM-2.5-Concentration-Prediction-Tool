@@ -5,7 +5,7 @@ if (!require("rsconnect")) install.packages("rsconnect")
 library(rsconnect)
 
 cat("Checking for required data files...\n")
-if (!file.exists("app/data/forecasts.rds") || !file.exists("app/data/eda_features.rds")) {
+if (!file.exists("app/data/forecasts.rds") || !file.exists("app/data/eda_features.rds") || !file.exists("app/data/clean_tsibble.rds")) {
   stop("Data files are missing! You must run the data pipeline (.\\run_pipeline.ps1) locally before deploying to ensure the app has data to display.")
 }
 
