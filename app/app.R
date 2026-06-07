@@ -23,9 +23,29 @@ ui <- page_navbar(
   ),
   
   nav_panel("Overview",
-    card(
-      card_header("Project Information"),
-      markdown("This dashboard presents the results of the EXL EQ 2023 Challenge. It forecasts 4-hourly PM 2.5 concentrations for 34 Indian cities.")
+    layout_columns(
+      col_widths = c(12),
+      card(
+        card_header(class = "bg-primary text-white", "Project Executive Summary"),
+        markdown("
+### EXL EQ’ 2023 Challenge: Real-Time PM 2.5 Concentration Predictor
+
+**The Objective:** Develop a robust, real-time prediction engine to forecast PM 2.5 concentrations across 34 major Indian cities. The goal was to predict pollution levels 3 days into the future (in 4-hour intervals) to help identify highly hazardous conditions and peak pollution windows.
+
+**Methodology & Approach:**
+* **Exploratory Data Analysis:** Identified strong multi-seasonal patterns, specifically diurnal (daily) and weekly/annual cycles in human activity and traffic that heavily influence PM 2.5 levels.
+* **Feature Engineering:** Integrated meteorological variables and core pollutant data (NO, NO2, NOx, NH3, SO2, CO, Benzene, AT) to capture multivariate effects.
+* **Forecasting Engine:** Developed a multi-model approach using the `fable` framework:
+    1. **STL + ARIMA:** A univariate model utilizing STL decomposition on seasonally adjusted data.
+    2. **Multivariate DHR:** Dynamic Harmonic Regression with ARMA errors, leveraging stepwise regression on exogenous environmental factors.
+
+**Key Results:**
+By combining robust seasonal decomposition with exogenous variable forecasting, the final Multivariate DHR model achieved a **Mean Absolute Percentage Error (MAPE) of approximately 20-25%**, providing highly actionable insights into upcoming hazardous air quality periods.
+
+**Tech Stack:**
+`R` | `Tidyverse` | `Tidymodels` | `Tsibble` | `Fable` | `Shiny` | `bslib`
+        ")
+      )
     )
   ),
   
