@@ -2,7 +2,6 @@
 library(shiny)
 library(bslib)
 library(fpp3)
-library(plotly)
 
 # Load pre-computed data
 eda_features <- readRDS("data/eda_features.rds")
@@ -64,13 +63,13 @@ By combining robust seasonal decomposition with exogenous variable forecasting, 
         )
       ),
       nav_panel("Time Plot",
-        plotlyOutput("time_plot")
+        plotOutput("time_plot")
       ),
       nav_panel("Seasonal Plots",
         navset_pill(
-          nav_panel("Daily Pattern (14 Days)", plotlyOutput("season_plot_daily")),
-          nav_panel("Weekly Pattern (4 Weeks)", plotlyOutput("season_plot_weekly")),
-          nav_panel("Annual Pattern", plotlyOutput("season_plot_annual"))
+          nav_panel("Daily Pattern (14 Days)", plotOutput("season_plot_daily")),
+          nav_panel("Weekly Pattern (4 Weeks)", plotOutput("season_plot_weekly")),
+          nav_panel("Annual Pattern", plotOutput("season_plot_annual"))
         )
       ),
       nav_panel("STL Decomposition",
@@ -82,7 +81,7 @@ By combining robust seasonal decomposition with exogenous variable forecasting, 
   nav_panel("Forecasts",
     card(
       card_header(textOutput("forecast_header")),
-      plotlyOutput("forecast_plot")
+      plotOutput("forecast_plot")
     )
   )
 )
