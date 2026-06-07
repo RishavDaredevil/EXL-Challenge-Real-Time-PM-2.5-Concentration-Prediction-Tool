@@ -18,7 +18,8 @@ ui <- page_navbar(
   sidebar = sidebar(
     selectInput("city", "Select City:", choices = unique(eda_features$City)),
     selectInput("model", "Select Model Forecast:", choices = unique(forecasts$Model)),
-    helpText("Select a city to view historical EDA and upcoming 3-day forecasts.")
+    sliderInput("horizon", "Forecast Horizon (Days):", min = 1, max = 365, value = 3, step = 1),
+    helpText("Select a city to view historical EDA and upcoming Dynamic Horizon Forecast.")
   ),
   
   nav_panel("Overview",
@@ -55,7 +56,7 @@ ui <- page_navbar(
   
   nav_panel("Forecasts",
     card(
-      card_header("3-Day Forecast"),
+      card_header(textOutput("forecast_header")),
       plotlyOutput("forecast_plot")
     )
   )
@@ -73,32 +74,33 @@ server <- function(input, output, session) {
   output$stats_basic <- renderDT({
     req(nrow(city_features()) > 0)
     city_features() %>%
-      select(State, City, starts_with("Mean_"), starts_with("Median_"), starts_with("Max_")) %>%
+      select(starts_with("Mean_"), starts_with("Median_"), starts_with("Max_"), starts_with("P90_")) %>%
+      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value") %>%
       datatable(options = list(dom = 't', paging = FALSE), 
                 class = 'cell-border stripe hover', rownames = FALSE) %>%
-      formatRound(columns = c("Mean_PM2.5", "Median_PM2.5", "Max_PM2.5"), digits = 2)
+      formatRound(columns = "Value", digits = 2)
   })
   
   # Group 2: STL Features (Trend and Seasonality strength)
   output$stats_stl <- renderDT({
     req(nrow(city_features()) > 0)
-    df <- city_features() %>%
-      select(State, City, contains("strength"), contains("peak"), contains("trough"), spikiness, linearity, curvature)
-    
-    datatable(df, options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
-              class = 'cell-border stripe hover', rownames = FALSE) %>%
-      formatRound(columns = 3:ncol(df), digits = 3)
+    city_features() %>%
+      select(contains("strength"), contains("peak"), contains("trough"), spikiness, linearity, curvature) %>%
+      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value") %>%
+      datatable(options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
+                class = 'cell-border stripe hover', rownames = FALSE) %>%
+      formatRound(columns = "Value", digits = 3)
   })
   
   # Group 3: ACF Features (Autocorrelation)
   output$stats_acf <- renderDT({
     req(nrow(city_features()) > 0)
-    df <- city_features() %>%
-      select(State, City, contains("acf"))
-      
-    datatable(df, options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
-              class = 'cell-border stripe hover', rownames = FALSE) %>%
-      formatRound(columns = 3:ncol(df), digits = 3)
+    city_features() %>%
+      select(contains("acf")) %>%
+      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value") %>%
+      datatable(options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
+                class = 'cell-border stripe hover', rownames = FALSE) %>%
+      formatRound(columns = "Value", digits = 3)
   })
   
   # --- Interactive Plots ---
@@ -158,8 +160,16 @@ server <- function(input, output, session) {
       theme_minimal()
   })
   
+  output$forecast_header <- renderText({
+    paste("Dynamic Horizon Forecast (", input$horizon, " Days)", sep = "")
+  })
+  
   output$forecast_plot <- renderPlotly({
-    city_forecast <- forecasts %>% filter(City == input$city, Model == input$model)
+    req_periods <- input$horizon * 6
+    
+    city_forecast <- forecasts %>% 
+      filter(City == input$city, Model == input$model) %>%
+      head(req_periods)
     
     p <- ggplot(city_forecast, aes(x = `Time Periods`, y = Predicted_PM2.5)) +
       geom_line(color = "red") +

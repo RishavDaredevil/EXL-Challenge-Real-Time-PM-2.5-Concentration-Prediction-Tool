@@ -15,6 +15,7 @@ eda_features <- clean_tsibble %>%
         Mean_PM2.5 = mean(PM2.5, na.rm = TRUE),
         Median_PM2.5 = median(PM2.5, na.rm = TRUE),
         Max_PM2.5 = max(PM2.5, na.rm = TRUE),
+        P90_PM2.5 = quantile(PM2.5, 0.9, na.rm = TRUE),
         .groups = "drop"
       ),
     by = c("State", "City")
@@ -23,7 +24,7 @@ eda_features <- clean_tsibble %>%
 # Perform an STL decomposition on the PM 2.5 data for all cities
 stl_components <- clean_tsibble %>%
   model(
-    STL(PM2.5 ~ season(period = "day") + season(period = "year"), robust = TRUE)
+    STL(log1p(PM2.5) ~ season(period = "day") + season(period = "week") + season(period = "year"), robust = TRUE)
   ) %>%
   components()
 
