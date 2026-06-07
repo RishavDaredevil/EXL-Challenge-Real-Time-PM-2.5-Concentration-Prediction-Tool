@@ -2,11 +2,15 @@
 
 This repository contains the reconstructed and optimized codebase for an entry into the EXL EQ' 2023 Challenge. The objective is to provide a highly robust, real-time prediction engine forecasting PM 2.5 concentrations across 34 major Indian cities, 3 days into the future at 4-hour intervals.
 
-## 📖 Research & Methodology
+## 📖 Research & Interactive Dashboard
 
-A comprehensive breakdown of the data engineering, multi-seasonal exploratory data analysis, and the mathematical formulation of the forecasting models can be found in the accompanying Quarto document:
+A comprehensive breakdown of the data engineering, multi-seasonal exploratory data analysis, and the mathematical formulation of the forecasting models can be found in the accompanying Quarto document. 
+
+You can also interact with the live PM 2.5 predictions directly via the deployed Shiny application!
 
 **👉 [Read the Full Research Methodology Report Here](https://rishavdaredevil.github.io/EXL-Challenge-Real-Time-PM-2.5-Concentration-Prediction-Tool/reports/research_methodology.html)**
+
+**📈 [Explore the Live Interactive Dashboard Here](https://8onzsa-rishav-dhariwal.shinyapps.io/EXL-PM25-Predictor/)**
 
 ### Modeling Approach
 The project utilizes the `fable` (fpp3) ecosystem to test three progressive approaches:
@@ -50,4 +54,3 @@ Once the data is generated, launch the interactive Shiny app:
 The project is structured to support flexible cloud deployments. See `docs/notes/deployment_guide.md` for full instructions.
 
 * **Shinyapps.io:** Use the included `deploy_app.R` script to push the bundled `app/` folder to a live R server.
-* **WebAssembly (Cloudflare/GitHub Pages):** The app is entirely compatible with `webr`. Use the included `build_shinylive.R` script to compile the R engine and app into a static WebAssembly bundle that runs entirely in the user's browser, requiring zero backend server architecture.

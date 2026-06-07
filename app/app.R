@@ -21,8 +21,8 @@ ui <- page_navbar(
     
     layout_columns(
       col_widths = c(8, 4),
-      sliderInput("horizon_slider", "Forecast Horizon (Days):", min = 1, max = 365, value = 90, step = 1),
-      numericInput("horizon_num", "Days:", min = 1, max = 365, value = 90, step = 1)
+      sliderInput("horizon_slider", "Forecast Horizon (Days):", min = 1, max = 365, value = 3, step = 1),
+      numericInput("horizon_num", "Days:", min = 1, max = 365, value = 3, step = 1)
     ),
     
     helpText("Select a city to view historical EDA and upcoming Dynamic Horizon Forecast.")
