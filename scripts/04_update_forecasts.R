@@ -30,10 +30,9 @@ if (length(available_exog) > 0) {
   
   for (var in available_exog) {
     cat(sprintf("  -> Forecasting %s...\n", var))
-    var_formula <- as.formula(paste0("log1p(`", var, "`) ~ ARIMA()"))
     
     exog_fc <- clean_tsibble %>%
-      model(mod = ARIMA(!!var_formula)) %>%
+      model(mod = ARIMA(log1p(!!sym(var)))) %>%
       forecast(h = periods) %>%
       as_tibble() %>%
       select(State, City, `Time Periods`, .mean)
