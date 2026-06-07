@@ -82,21 +82,23 @@ server <- function(input, output, session) {
   # Group 2: STL Features (Trend and Seasonality strength)
   output$stats_stl <- renderDT({
     req(nrow(city_features()) > 0)
-    city_features() %>%
-      select(State, City, contains("strength"), contains("peak"), contains("trough"), spikiness, linearity, curvature) %>%
-      datatable(options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
-                class = 'cell-border stripe hover', rownames = FALSE) %>%
-      formatRound(columns = 3:ncol(.), digits = 3)
+    df <- city_features() %>%
+      select(State, City, contains("strength"), contains("peak"), contains("trough"), spikiness, linearity, curvature)
+    
+    datatable(df, options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
+              class = 'cell-border stripe hover', rownames = FALSE) %>%
+      formatRound(columns = 3:ncol(df), digits = 3)
   })
   
   # Group 3: ACF Features (Autocorrelation)
   output$stats_acf <- renderDT({
     req(nrow(city_features()) > 0)
-    city_features() %>%
-      select(State, City, contains("acf")) %>%
-      datatable(options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
-                class = 'cell-border stripe hover', rownames = FALSE) %>%
-      formatRound(columns = 3:ncol(.), digits = 3)
+    df <- city_features() %>%
+      select(State, City, contains("acf"))
+      
+    datatable(df, options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
+              class = 'cell-border stripe hover', rownames = FALSE) %>%
+      formatRound(columns = 3:ncol(df), digits = 3)
   })
   
   # --- Interactive Plots ---
@@ -114,7 +116,7 @@ server <- function(input, output, session) {
   output$season_plot_daily <- renderPlotly({
     recent_data <- clean_tsibble %>% 
       filter(City == input$city) %>%
-      filter(`Time Periods` >= (max(`Time Periods`) - days(30)))
+      tail(180) # 30 days * 6 obs/day
       
     p <- recent_data %>% 
       gg_season(PM2.5, period = "day") +
@@ -128,11 +130,11 @@ server <- function(input, output, session) {
   output$season_plot_weekly <- renderPlotly({
     recent_data <- clean_tsibble %>% 
       filter(City == input$city) %>%
-      filter(`Time Periods` >= (max(`Time Periods`) - months(3)))
+      tail(504) # 12 weeks * 42 obs/week
       
     p <- recent_data %>% 
       gg_season(PM2.5, period = "week") +
-      labs(title = "Weekly Pattern (Last 3 Months)", x = "Day of Week", y = "PM 2.5") +
+      labs(title = "Weekly Pattern (Last 12 Weeks)", x = "Day of Week", y = "PM 2.5") +
       theme_minimal() +
       theme(legend.position = "none")
     ggplotly(p)
