@@ -18,7 +18,13 @@ ui <- page_navbar(
   sidebar = sidebar(
     selectInput("city", "Select City:", choices = unique(eda_features$City)),
     selectInput("model", "Select Model Forecast:", choices = unique(forecasts$Model)),
-    sliderInput("horizon", "Forecast Horizon (Days):", min = 1, max = 365, value = 3, step = 1),
+    
+    layout_columns(
+      col_widths = c(8, 4),
+      sliderInput("horizon_slider", "Forecast Horizon (Days):", min = 1, max = 365, value = 90, step = 1),
+      numericInput("horizon_num", "Days:", min = 1, max = 365, value = 90, step = 1)
+    ),
+    
     helpText("Select a city to view historical EDA and upcoming Dynamic Horizon Forecast.")
   ),
   
@@ -83,6 +89,15 @@ By combining robust seasonal decomposition with exogenous variable forecasting, 
 )
 
 server <- function(input, output, session) {
+  
+  # Sync slider and numeric inputs
+  observeEvent(input$horizon_slider, {
+    updateNumericInput(session, "horizon_num", value = input$horizon_slider)
+  })
+  
+  observeEvent(input$horizon_num, {
+    updateSliderInput(session, "horizon_slider", value = input$horizon_num)
+  })
   
   # --- Advanced Statistics Tables (Grouped & Interactive) ---
   
@@ -181,11 +196,11 @@ server <- function(input, output, session) {
   })
   
   output$forecast_header <- renderText({
-    paste("Dynamic Horizon Forecast (", input$horizon, " Days)", sep = "")
+    paste("Dynamic Horizon Forecast (", input$horizon_num, " Days)", sep = "")
   })
   
   output$forecast_plot <- renderPlotly({
-    req_periods <- input$horizon * 6
+    req_periods <- input$horizon_num * 6
     
     city_forecast <- forecasts %>% 
       filter(City == input$city, Model == input$model) %>%
