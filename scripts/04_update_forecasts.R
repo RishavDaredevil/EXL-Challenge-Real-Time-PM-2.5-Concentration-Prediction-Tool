@@ -17,6 +17,7 @@ cat(sprintf("Updating forecasts for a horizon of %d days (%d periods)...\n", day
 # 1. Load Data and Pre-trained Models
 clean_tsibble <- readRDS("data/processed/clean_tsibble.rds")
 models <- readRDS("data/processed/models.rds")
+exog_models <- readRDS("data/processed/exog_models.rds")
 
 target_exog_vars <- c("NO", "NO2", "NOx", "NH3", "SO2", "CO", "Benzene", "AT")
 available_exog <- intersect(names(clean_tsibble), target_exog_vars)
@@ -31,11 +32,12 @@ if (length(available_exog) > 0) {
   for (var in available_exog) {
     cat(sprintf("  -> Forecasting %s...\n", var))
     
-    exog_fc <- clean_tsibble %>%
-      model(mod = ARIMA(log1p(!!sym(var)))) %>%
-      forecast(h = periods) %>%
-      as_tibble() %>%
-      select(State, City, `Time Periods`, .mean)
+    exog_fc <- suppressWarnings({
+      exog_models[[var]] %>%
+        forecast(h = periods) %>%
+        as_tibble() %>%
+        select(State, City, `Time Periods`, .mean)
+    })
     
     exog_fc[[var]] <- pmax(0, exog_fc$.mean)
     exog_fc$.mean <- NULL

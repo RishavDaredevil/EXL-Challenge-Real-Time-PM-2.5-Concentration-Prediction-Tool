@@ -56,11 +56,17 @@ if (length(available_exog) > 0) {
   cat("Forecasting exogenous variables using Univariate ARIMA...\n")
   
   future_exog_list <- list()
+  exog_models <- list() # Initialize list to cache exogenous models
   
   for (var in available_exog) {
+    # Train model for exogenous variable
+    mod <- clean_tsibble %>%
+      model(mod = ARIMA(log1p(!!sym(var))))
+      
+    exog_models[[var]] <- mod
+    
     # Forecast each exogenous variable smoothly
-    exog_fc <- clean_tsibble %>%
-      model(mod = ARIMA(log1p(!!sym(var)))) %>%
+    exog_fc <- mod %>%
       forecast(h = 2190) %>%
       as_tibble() %>%
       select(State, City, `Time Periods`, .mean)
@@ -72,6 +78,9 @@ if (length(available_exog) > 0) {
     
     future_exog_list[[var]] <- exog_fc
   }
+  
+  # Save the exogenous models for fast updates later
+  saveRDS(exog_models, "data/processed/exog_models.rds")
   
   # Join all forecasted exogenous variables back into future_data
   for (var in available_exog) {
