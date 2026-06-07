@@ -14,6 +14,7 @@ ui <- page_navbar(
   
   sidebar = sidebar(
     selectInput("city", "Select City:", choices = unique(eda_summaries$City)),
+    selectInput("model", "Select Model Forecast:", choices = unique(forecasts$Model)),
     helpText("Select a city to view historical EDA and upcoming 3-day forecasts.")
   ),
   
@@ -46,12 +47,12 @@ server <- function(input, output, session) {
   })
   
   output$forecast_plot <- renderPlotly({
-    city_forecast <- forecasts %>% filter(City == input$city)
+    city_forecast <- forecasts %>% filter(City == input$city, Model == input$model)
     
     p <- ggplot(city_forecast, aes(x = `Time Periods`, y = exp(Predicted_PM2.5)-1)) +
       geom_line(color = "red") +
       geom_point() +
-      labs(title = paste("PM 2.5 Forecasts for", input$city), x = "Time", y = "Predicted PM 2.5") +
+      labs(title = paste("PM 2.5 Forecasts for", input$city, "(", input$model, ")"), x = "Time", y = "Predicted PM 2.5") +
       theme_minimal()
       
     ggplotly(p)

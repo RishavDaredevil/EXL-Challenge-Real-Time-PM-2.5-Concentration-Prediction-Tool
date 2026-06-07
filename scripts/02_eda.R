@@ -2,7 +2,7 @@
 library(tidyverse)
 library(tsibble)
 
-clean_tsibble <- readRDS("../data/processed/clean_tsibble.rds")
+clean_tsibble <- readRDS("data/processed/clean_tsibble.rds")
 
 # Generate simple city summaries for EDA
 eda_summaries <- clean_tsibble %>%
@@ -16,5 +16,5 @@ eda_summaries <- clean_tsibble %>%
   )
 
 # Ensure app/data directory exists
-dir.create("../app/data", showWarnings = FALSE, recursive = TRUE)
-saveRDS(eda_summaries, "../app/data/eda_summaries.rds")
+dir.create("app/data", showWarnings = FALSE, recursive = TRUE)
+saveRDS(eda_summaries, "app/data/eda_summaries.rds")

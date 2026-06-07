@@ -8,3 +8,16 @@ data/processed/
 __pycache__/
 *.xlsm
 *.rds
+
+# Messy original project files and logs
+R project files/
+docs/
+What I had done In my Attempt.txt
+terminal run attempt.txt
+desktop.ini
+
+# Python environment files not needed for this R project
+.python-version
+main.py
+pyproject.toml
+uv.lock

@@ -6,7 +6,7 @@ library(lubridate)
 library(readxl)
 
 # Create mock data if raw data is missing for testing purposes
-if(!file.exists("../data/raw/EXL_EQ_2023_Dataset.xlsm")) {
+if(!file.exists("data/raw/EXL_EQ_2023_Dataset.xlsm")) {
   # Generate minimal mock data
   times <- seq(as.POSIXct("2021-01-01 00:00:00"), as.POSIXct("2021-01-05 00:00:00"), by="4 hours")
   df <- expand_grid(
@@ -19,7 +19,7 @@ if(!file.exists("../data/raw/EXL_EQ_2023_Dataset.xlsm")) {
       Temp = runif(n(), 15, 35)
     )
 } else {
-  df <- read_excel("../data/raw/EXL_EQ_2023_Dataset.xlsm")
+  df <- read_excel("data/raw/EXL_EQ_2023_Dataset.xlsm")
 }
 
 # Clean and convert to tsibble
@@ -31,4 +31,4 @@ clean_tsibble <- df %>%
   ungroup() %>%
   as_tsibble(key = c(State, City), index = `Time Periods`)
 
-saveRDS(clean_tsibble, "../data/processed/clean_tsibble.rds")
+saveRDS(clean_tsibble, "data/processed/clean_tsibble.rds")

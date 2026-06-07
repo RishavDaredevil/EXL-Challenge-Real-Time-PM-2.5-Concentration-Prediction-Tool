@@ -9,7 +9,8 @@ It features a modular data pipeline and an interactive Shiny dashboard.
 - `app/`: Shiny application with pre-computed data
 
 ## How to Run
-1. Run `scripts/01_data_cleaning.R`
-2. Run `scripts/02_eda.R`
-3. Run `scripts/03_modeling.R`
-4. Launch the app by running `shiny::runApp("app")`
+1. Execute the scripts in `scripts/` in order (01, 02, 03) to process the data and generate models.
+2. Launch the Shiny app by running the provided launcher script for your platform:
+   - On Windows (Command Prompt): Double-click `run_app.bat` or run `.\run_app.bat`
+   - On Windows (PowerShell): Run `.\run_app.ps1`
+   - Or, manually via Rscript: `Rscript -e "shiny::runApp('app', port=8080)"`
