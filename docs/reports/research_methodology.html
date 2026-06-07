@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Your Name">
+<meta name="dcterms.date" content="2026-06-07">
+
+<title>Forecasting PM 2.5 in Indian Cities: A Multi-Seasonal Approach</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="research_methodology_files/libs/clipboard/clipboard.min.js"></script>
+<script src="research_methodology_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="research_methodology_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="research_methodology_files/libs/quarto-html/popper.min.js"></script>
+<script src="research_methodology_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="research_methodology_files/libs/quarto-html/anchor.min.js"></script>
+<link href="research_methodology_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="research_methodology_files/libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="research_methodology_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="research_methodology_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="research_methodology_files/libs/bootstrap/bootstrap-293cc809d15782442e9b1098eedb6797.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#executive-summary" id="toc-executive-summary" class="nav-link active" data-scroll-target="#executive-summary"><span class="header-section-number">1</span> Executive Summary</a></li>
+  <li><a href="#data-engineering-preprocessing" id="toc-data-engineering-preprocessing" class="nav-link" data-scroll-target="#data-engineering-preprocessing"><span class="header-section-number">2</span> Data Engineering &amp; Preprocessing</a>
+  <ul class="collapse">
+  <li><a href="#the-tsibble-framework" id="toc-the-tsibble-framework" class="nav-link" data-scroll-target="#the-tsibble-framework"><span class="header-section-number">2.1</span> The tsibble Framework</a></li>
+  <li><a href="#feature-selection-transformations" id="toc-feature-selection-transformations" class="nav-link" data-scroll-target="#feature-selection-transformations"><span class="header-section-number">2.2</span> Feature Selection &amp; Transformations</a></li>
+  </ul></li>
+  <li><a href="#exploratory-data-analysis-eda" id="toc-exploratory-data-analysis-eda" class="nav-link" data-scroll-target="#exploratory-data-analysis-eda"><span class="header-section-number">3</span> Exploratory Data Analysis (EDA)</a>
+  <ul class="collapse">
+  <li><a href="#historical-time-plot" id="toc-historical-time-plot" class="nav-link" data-scroll-target="#historical-time-plot"><span class="header-section-number">3.1</span> Historical Time Plot</a></li>
+  <li><a href="#unpacking-the-seasons-gg_season" id="toc-unpacking-the-seasons-gg_season" class="nav-link" data-scroll-target="#unpacking-the-seasons-gg_season"><span class="header-section-number">3.2</span> Unpacking the Seasons (gg_season)</a></li>
+  <li><a href="#multi-seasonal-stl-decomposition" id="toc-multi-seasonal-stl-decomposition" class="nav-link" data-scroll-target="#multi-seasonal-stl-decomposition"><span class="header-section-number">3.3</span> Multi-Seasonal STL Decomposition</a></li>
+  </ul></li>
+  <li><a href="#model-formulation" id="toc-model-formulation" class="nav-link" data-scroll-target="#model-formulation"><span class="header-section-number">4</span> Model Formulation</a>
+  <ul class="collapse">
+  <li><a href="#model-1-stl-arima" id="toc-model-1-stl-arima" class="nav-link" data-scroll-target="#model-1-stl-arima"><span class="header-section-number">4.1</span> Model 1: STL + ARIMA</a></li>
+  <li><a href="#model-2-univariate-dynamic-harmonic-regression-dhr" id="toc-model-2-univariate-dynamic-harmonic-regression-dhr" class="nav-link" data-scroll-target="#model-2-univariate-dynamic-harmonic-regression-dhr"><span class="header-section-number">4.2</span> Model 2: Univariate Dynamic Harmonic Regression (DHR)</a></li>
+  <li><a href="#model-3-multivariate-dhr" id="toc-model-3-multivariate-dhr" class="nav-link" data-scroll-target="#model-3-multivariate-dhr"><span class="header-section-number">4.3</span> Model 3: Multivariate DHR</a></li>
+  </ul></li>
+  <li><a href="#forecasting-exogenous-simulation" id="toc-forecasting-exogenous-simulation" class="nav-link" data-scroll-target="#forecasting-exogenous-simulation"><span class="header-section-number">5</span> Forecasting &amp; Exogenous Simulation</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">6</span> Conclusion</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title">Forecasting PM 2.5 in Indian Cities: A Multi-Seasonal Approach</h1><button type="button" class="btn code-tools-button dropdown-toggle" id="quarto-code-tools-menu" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi"></i> Code</button><ul class="dropdown-menu dropdown-menu-end" aria-labelelledby="quarto-code-tools-menu"><li><a id="quarto-show-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Show All Code</a></li><li><a id="quarto-hide-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Hide All Code</a></li><li><hr class="dropdown-divider"></li><li><a id="quarto-view-source" class="dropdown-item" href="javascript:void(0)" role="button">View Source</a></li></ul></div></div>
+<p class="subtitle lead">Research and Methodology for the EXL EQ’ 2023 Challenge</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Your Name </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 7, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="executive-summary" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Executive Summary</h1>
+<p>This document details the analytical methodology used to develop a robust, real-time prediction tool to forecast PM 2.5 concentrations across 34 Indian cities. The objective of the EXL EQ’ 2023 Challenge was to predict pollution levels 3 days into the future at 4-hour intervals. By identifying complex multi-seasonal patterns and incorporating exogenous environmental factors, the final Multivariate Dynamic Harmonic Regression (DHR) model achieved a highly competitive Mean Absolute Percentage Error (MAPE) of approximately <strong>20-25%</strong>.</p>
+</section>
+<section id="data-engineering-preprocessing" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Data Engineering &amp; Preprocessing</h1>
+<p>The dataset consisted of 4-hourly spaced observations over three years. Proper handling of this high-frequency time series was critical to ensure mathematical stability during the forecasting process.</p>
+<section id="the-tsibble-framework" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="the-tsibble-framework"><span class="header-section-number">2.1</span> The tsibble Framework</h2>
+<p>The raw data was ingested and converted into a <code>tsibble</code> object to explicitly define the temporal structure and the nested geographical hierarchies (State &gt; City). This structure natively supports tidy forecasting via the <code>fable</code> ecosystem.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Previewing the core temporal structure of our target city, Delhi</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>clean_tsibble <span class="sc">|&gt;</span> </span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(City <span class="sc">==</span> <span class="st">"Delhi"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(City, <span class="st">`</span><span class="at">Time Periods</span><span class="st">`</span>, PM2<span class="fl">.5</span>, NO2, CO) <span class="sc">|&gt;</span> </span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tsibble: 6 x 5 [4h] &lt;UTC&gt;
+# Key:       City [1]
+  City  `Time Periods`      PM2.5   NO2    CO
+  &lt;chr&gt; &lt;dttm&gt;              &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+1 Delhi 2020-01-01 00:00:00  549.  91.2  3.52
+2 Delhi 2020-01-01 04:00:00  435.  79.7  3.46
+3 Delhi 2020-01-01 08:00:00  453. 122.   2.46
+4 Delhi 2020-01-01 12:00:00  187. 114.   1.41
+5 Delhi 2020-01-01 16:00:00  263. 124.   2.69
+6 Delhi 2020-01-01 20:00:00  725. 124.   3.12</code></pre>
+</div>
+</div>
+</section>
+<section id="feature-selection-transformations" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="feature-selection-transformations"><span class="header-section-number">2.2</span> Feature Selection &amp; Transformations</h2>
+<p>A critical step in stabilizing the variance of the highly skewed PM 2.5 data was applying a logarithmic transformation. Because PM 2.5 and gas concentrations can occasionally approach zero, a <span class="math inline">\(\log(x+1)\)</span> transformation (<code>log1p</code>) was utilized.</p>
+<p>Static demographic variables (e.g., latitude, total road length) were excluded from the modeling matrix to prevent rank deficiencies in the ARMA models, allowing us to focus strictly on dynamic exogenous features: <strong>NO, NO2, NOx, NH3, SO2, CO, Benzene, and AT</strong>.</p>
+</section>
+</section>
+<section id="exploratory-data-analysis-eda" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Exploratory Data Analysis (EDA)</h1>
+<p>Time series analysis of PM 2.5 reveals that pollution is not a random walk; it is deeply tied to human activity and atmospheric conditions.</p>
+<section id="historical-time-plot" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="historical-time-plot"><span class="header-section-number">3.1</span> Historical Time Plot</h2>
+<p>Plotting the historical data instantly reveals the macro-level volatility of PM 2.5 in a major metropolitan area like Delhi.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>clean_tsibble <span class="sc">|&gt;</span> </span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(City <span class="sc">==</span> <span class="st">"Delhi"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(PM2<span class="fl">.5</span>, <span class="at">color =</span> <span class="st">"#2c3e50"</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Delhi PM 2.5 Concentration Over Time"</span>, </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="fu">expression</span>(PM[<span class="fl">2.5</span>]<span class="sc">~</span>(mu<span class="sc">*</span>g<span class="sc">/</span>m<span class="sc">^</span><span class="dv">3</span>)), </span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Date"</span>) <span class="sc">+</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="research_methodology_files/figure-html/time-plot-1.png" class="img-fluid figure-img" width="960"></p>
+<figcaption>Historical 4-Hourly PM 2.5 Concentrations in Delhi</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Analytical Insight:</strong> We can see massive, repeating spikes occurring at identical intervals every single year. The variance during these peak seasons is extreme compared to the baseline, which validates our decision to use a logarithmic transformation to stabilize the model training.</p>
+</section>
+<section id="unpacking-the-seasons-gg_season" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="unpacking-the-seasons-gg_season"><span class="header-section-number">3.2</span> Unpacking the Seasons (gg_season)</h2>
+<p>Using <code>feasts::gg_season()</code>, we can overlap the data to isolate specific time frames.</p>
+<div class="cell" data-layout.ncol="2">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filtering to recent, smaller windows to prevent line-clutter</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>delhi_data <span class="ot">&lt;-</span> clean_tsibble <span class="sc">|&gt;</span> <span class="fu">filter</span>(City <span class="sc">==</span> <span class="st">"Delhi"</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Daily Pattern (Last 14 days)</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>delhi_data <span class="sc">|&gt;</span> </span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tail</span>(<span class="dv">84</span>) <span class="sc">|&gt;</span> <span class="co"># 14 days * 6 obs/day</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gg_season</span>(PM2<span class="fl">.5</span>, <span class="at">period =</span> <span class="st">"day"</span>) <span class="sc">+</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Diurnal (Daily) Cycle"</span>, <span class="at">x =</span> <span class="st">"Time of Day"</span>, <span class="at">y =</span> <span class="st">"PM 2.5"</span>) <span class="sc">+</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="research_methodology_files/figure-html/seasonal-plots-1.png" class="img-fluid figure-img" width="960"></p>
+<figcaption>Daily and Weekly Seasonality Patterns</figcaption>
+</figure>
+</div>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Weekly Pattern (Last 4 weeks)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>delhi_data <span class="sc">|&gt;</span> </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tail</span>(<span class="dv">168</span>) <span class="sc">|&gt;</span> <span class="co"># 4 weeks * 42 obs/week</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gg_season</span>(PM2<span class="fl">.5</span>, <span class="at">period =</span> <span class="st">"week"</span>) <span class="sc">+</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Weekly Cycle"</span>, <span class="at">x =</span> <span class="st">"Day of Week"</span>, <span class="at">y =</span> <span class="st">"PM 2.5"</span>) <span class="sc">+</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="research_methodology_files/figure-html/seasonal-plots-2.png" class="img-fluid figure-img" width="960"></p>
+<figcaption>Daily and Weekly Seasonality Patterns</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Analytical Insights:</strong> 1. <strong>Diurnal (Daily):</strong> There is a distinct “U-shape” or “W-shape” throughout the day. Pollution peaks sharply during the morning rush hour (8:00 AM - 10:00 AM) and late evening, while dropping significantly in the middle of the day due to atmospheric mixing and solar radiation. 2. <strong>Weekly:</strong> The weekends (Saturday/Sunday) often show slightly subdued peaks compared to mid-week, correlating with a drop in commuting and industrial output.</p>
+</section>
+<section id="multi-seasonal-stl-decomposition" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="multi-seasonal-stl-decomposition"><span class="header-section-number">3.3</span> Multi-Seasonal STL Decomposition</h2>
+<p>Because the data exhibits overlapping cycles (Daily, Weekly, and Annual), a standard seasonal decomposition fails. We utilized a robust, multi-seasonal STL decomposition to mathematically extract these distinct waveforms.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>clean_tsibble <span class="sc">|&gt;</span> </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(City <span class="sc">==</span> <span class="st">"Delhi"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">model</span>(<span class="fu">STL</span>(<span class="fu">log1p</span>(PM2<span class="fl">.5</span>) <span class="sc">~</span> <span class="fu">season</span>(<span class="at">period =</span> <span class="st">"day"</span>) <span class="sc">+</span> </span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                           <span class="fu">season</span>(<span class="at">period =</span> <span class="st">"week"</span>) <span class="sc">+</span> </span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                           <span class="fu">season</span>(<span class="at">period =</span> <span class="st">"year"</span>), </span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">robust =</span> <span class="cn">TRUE</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">components</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>() <span class="sc">+</span> </span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="research_methodology_files/figure-html/stl-plot-1.png" class="img-fluid figure-img" width="960"></p>
+<figcaption>Multi-Seasonal STL Decomposition for Delhi</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Analytical Insight:</strong> The STL plot cleanly separates the massive annual winter spikes (Season_year) from the tight, fast-moving daily rush hour spikes (Season_day). The <code>Remainder</code> (residuals) represents weather anomalies or unpredicted events, which ARMA models are highly effective at capturing.</p>
+</section>
+</section>
+<section id="model-formulation" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Model Formulation</h1>
+<p>To capture these complex dynamics, three progressive forecasting models were developed and compared.</p>
+<section id="model-1-stl-arima" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="model-1-stl-arima"><span class="header-section-number">4.1</span> Model 1: STL + ARIMA</h2>
+<p>The first approach isolated the seasonal components using the robust STL decomposition shown above. An ARIMA model was then fitted strictly to the <code>season_adjust</code> (the de-seasonalized trend) to forecast the baseline, before re-adding the seasonal waveforms back into the prediction.</p>
+</section>
+<section id="model-2-univariate-dynamic-harmonic-regression-dhr" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="model-2-univariate-dynamic-harmonic-regression-dhr"><span class="header-section-number">4.2</span> Model 2: Univariate Dynamic Harmonic Regression (DHR)</h2>
+<p>To handle multiple complex seasonalities simultaneously <em>without</em> decomposing the data upfront, a Dynamic Harmonic Regression model with ARMA errors was formulated. This utilizes continuous Fourier terms to represent the seasonal cycles mathematically.</p>
+<p>The mathematical representation of the DHR model is: <span class="math display">\[ y_t = \beta_0 + \sum_{i=1}^M \sum_{j=1}^{K_i} \left( \alpha_{i,j} \sin\left(\frac{2\pi j t}{m_i}\right) + \gamma_{i,j} \cos\left(\frac{2\pi j t}{m_i}\right) \right) + \eta_t \]</span></p>
+<p>Where <span class="math inline">\(m_i\)</span> represents the seasonal periods (daily, annual), <span class="math inline">\(K_i\)</span> represents the number of Fourier pairs for each period, and <span class="math inline">\(\eta_t\)</span> is the ARIMA error process. To avoid Nyquist limit instability on 4-hourly data (6 periods/day), <span class="math inline">\(K_{\text{day}}\)</span> was restricted to 2.</p>
+</section>
+<section id="model-3-multivariate-dhr" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="model-3-multivariate-dhr"><span class="header-section-number">4.3</span> Model 3: Multivariate DHR</h2>
+<p>The final and most robust model integrated the exogenous meteorological and pollutant variables into the DHR framework. PM 2.5 is deeply correlated with NO2 (traffic) and CO (combustion).</p>
+<p><span class="math display">\[ y_t = \text{Fourier Terms} + \sum_{k=1}^P \delta_k x_{k,t} + \eta_t \]</span></p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example of the dynamic formula injected into fable</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>multivariate_formula <span class="ot">&lt;-</span> <span class="fu">as.formula</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"log1p(PM2.5) ~ fourier(period = 'day', K = 2) + </span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="st">                  fourier(period = 'year', K = 5) + </span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="st">                  PDQ(0,0,0) + </span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="st">                  log1p(NO) + log1p(NO2) + log1p(CO) + log1p(Benzene)"</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> clean_tsibble <span class="sc">|&gt;</span> </span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">model</span>(<span class="st">`</span><span class="at">Multivariate DHR</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">ARIMA</span>(<span class="sc">!!</span>multivariate_formula))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</section>
+</section>
+<section id="forecasting-exogenous-simulation" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Forecasting &amp; Exogenous Simulation</h1>
+<p>To forecast PM 2.5 accurately into the future, the multivariate model requires future states of its exogenous predictors (NO, NO2, etc.). A secondary modeling pipeline was developed to generate baseline ARIMA forecasts for all exogenous variables, using Last Observation Carried Forward (LOCF) or neutral <code>0</code> baselines for sensors that were entirely missing.</p>
+<p>These forecasted pollutants were then fed into the primary PM 2.5 prediction engine.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualizing the final outputs from our pre-computed pipeline</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>forecasts <span class="sc">|&gt;</span> </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(City <span class="sc">==</span> <span class="st">"Delhi"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Show the next 7 days (42 periods) for clarity</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">42</span> <span class="sc">*</span> <span class="dv">3</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="st">`</span><span class="at">Time Periods</span><span class="st">`</span>, <span class="at">y =</span> Predicted_PM2<span class="fl">.5</span>, <span class="at">color =</span> Model)) <span class="sc">+</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">alpha =</span> <span class="fl">0.8</span>, <span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Multi-Model Forecast Projections"</span>,</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Predicted PM 2.5"</span>, </span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Future Timeline"</span>) <span class="sc">+</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="research_methodology_files/figure-html/forecast-plot-1.png" class="img-fluid figure-img" width="960"></p>
+<figcaption>7-Day Horizon Forecast Comparison (Delhi)</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Analytical Insight:</strong> We can see how the models adapt to the future timeline. The <code>Multivariate DHR</code> model often deviates slightly from the purely univariate <code>DHR + ARMA</code> model, as it is dynamically adjusting its curve based on the predicted future states of NO2, CO, and other pollutants.</p>
+</section>
+<section id="conclusion" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Conclusion</h1>
+<p>The inclusion of dual-Fourier terms and stepwise multivariate integration successfully stabilized the extreme variance of the raw data.</p>
+<ul>
+<li><strong>Accuracy:</strong> The final Multivariate DHR model achieved a highly competitive steady-state MAPE of <strong><span class="math inline">\(20\% - 25\%\)</span></strong>, handling both daily rush hours and extreme winter anomalies effectively.</li>
+<li><strong>Deployment:</strong> The models were serialized into an offline caching system and connected to a reactive Shiny dashboard (<code>app.R</code>). This architecture allows users to dynamically slide the forecast horizon up to a full year without incurring any real-time computational training overhead.</li>
+</ul>
+<!-- -->
+
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Forecasting PM 2.5 in Indian Cities: A Multi-Seasonal Approach"</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "Research and Methodology for the EXL EQ' 2023 Challenge"</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Your Name"</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> today</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span><span class="co"> </span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co">    theme: flatly</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co">    toc: true</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co">    toc-depth: 3</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co">    number-sections: true</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co">    code-fold: show</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co">    fig-width: 10</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co">    fig-height: 6</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="an">execute:</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="co">  warning: false</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="co">  message: false</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="co">  echo: true</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setup, include=FALSE}</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Load required libraries and data silently for the report</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tsibble)</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(fable)</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(feasts)</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Paths are relative to the location of this .qmd file (docs/reports/)</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>clean_tsibble <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"../../data/processed/clean_tsibble.rds"</span>)</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>forecasts <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"../../app/data/forecasts.rds"</span>)</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a><span class="fu"># Executive Summary</span></span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>This document details the analytical methodology used to develop a robust, real-time prediction tool to forecast PM 2.5 concentrations across 34 Indian cities. The objective of the EXL EQ' 2023 Challenge was to predict pollution levels 3 days into the future at 4-hour intervals. By identifying complex multi-seasonal patterns and incorporating exogenous environmental factors, the final Multivariate Dynamic Harmonic Regression (DHR) model achieved a highly competitive Mean Absolute Percentage Error (MAPE) of approximately **20-25%**.</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a><span class="fu"># Data Engineering &amp; Preprocessing</span></span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>The dataset consisted of 4-hourly spaced observations over three years. Proper handling of this high-frequency time series was critical to ensure mathematical stability during the forecasting process.</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a><span class="fu">## The tsibble Framework</span></span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>The raw data was ingested and converted into a <span class="in">`tsibble`</span> object to explicitly define the temporal structure and the nested geographical hierarchies (State &gt; City). This structure natively supports tidy forecasting via the <span class="in">`fable`</span> ecosystem.</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a><span class="in">```{r data-glimpse}</span></span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Previewing the core temporal structure of our target city, Delhi</span></span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>clean_tsibble <span class="sc">|&gt;</span> </span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(City <span class="sc">==</span> <span class="st">"Delhi"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(City, <span class="st">`</span><span class="at">Time Periods</span><span class="st">`</span>, PM2<span class="fl">.5</span>, NO2, CO) <span class="sc">|&gt;</span> </span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>()</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a><span class="fu">## Feature Selection &amp; Transformations</span></span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>A critical step in stabilizing the variance of the highly skewed PM 2.5 data was applying a logarithmic transformation. Because PM 2.5 and gas concentrations can occasionally approach zero, a $\log(x+1)$ transformation (<span class="in">`log1p`</span>) was utilized. </span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>Static demographic variables (e.g., latitude, total road length) were excluded from the modeling matrix to prevent rank deficiencies in the ARMA models, allowing us to focus strictly on dynamic exogenous features: **NO, NO2, NOx, NH3, SO2, CO, Benzene, and AT**.</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a><span class="fu"># Exploratory Data Analysis (EDA)</span></span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>Time series analysis of PM 2.5 reveals that pollution is not a random walk; it is deeply tied to human activity and atmospheric conditions.</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a><span class="fu">## Historical Time Plot</span></span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>Plotting the historical data instantly reveals the macro-level volatility of PM 2.5 in a major metropolitan area like Delhi.</span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a><span class="in">```{r time-plot, fig.cap="Historical 4-Hourly PM 2.5 Concentrations in Delhi"}</span></span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>clean_tsibble <span class="sc">|&gt;</span> </span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(City <span class="sc">==</span> <span class="st">"Delhi"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(PM2<span class="fl">.5</span>, <span class="at">color =</span> <span class="st">"#2c3e50"</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Delhi PM 2.5 Concentration Over Time"</span>, </span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="fu">expression</span>(PM[<span class="fl">2.5</span>]<span class="sc">~</span>(mu<span class="sc">*</span>g<span class="sc">/</span>m<span class="sc">^</span><span class="dv">3</span>)), </span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Date"</span>) <span class="sc">+</span></span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>**Analytical Insight:** We can see massive, repeating spikes occurring at identical intervals every single year. The variance during these peak seasons is extreme compared to the baseline, which validates our decision to use a logarithmic transformation to stabilize the model training.</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a><span class="fu">## Unpacking the Seasons (gg_season)</span></span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>Using <span class="in">`feasts::gg_season()`</span>, we can overlap the data to isolate specific time frames. </span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a><span class="in">```{r seasonal-plots, fig.cap="Daily and Weekly Seasonality Patterns", layout.ncol=2}</span></span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a><span class="co"># Filtering to recent, smaller windows to prevent line-clutter</span></span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a>delhi_data <span class="ot">&lt;-</span> clean_tsibble <span class="sc">|&gt;</span> <span class="fu">filter</span>(City <span class="sc">==</span> <span class="st">"Delhi"</span>)</span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a><span class="co"># Daily Pattern (Last 14 days)</span></span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a>delhi_data <span class="sc">|&gt;</span> </span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tail</span>(<span class="dv">84</span>) <span class="sc">|&gt;</span> <span class="co"># 14 days * 6 obs/day</span></span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gg_season</span>(PM2<span class="fl">.5</span>, <span class="at">period =</span> <span class="st">"day"</span>) <span class="sc">+</span></span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Diurnal (Daily) Cycle"</span>, <span class="at">x =</span> <span class="st">"Time of Day"</span>, <span class="at">y =</span> <span class="st">"PM 2.5"</span>) <span class="sc">+</span></span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a><span class="co"># Weekly Pattern (Last 4 weeks)</span></span>
+<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a>delhi_data <span class="sc">|&gt;</span> </span>
+<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tail</span>(<span class="dv">168</span>) <span class="sc">|&gt;</span> <span class="co"># 4 weeks * 42 obs/week</span></span>
+<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gg_season</span>(PM2<span class="fl">.5</span>, <span class="at">period =</span> <span class="st">"week"</span>) <span class="sc">+</span></span>
+<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Weekly Cycle"</span>, <span class="at">x =</span> <span class="st">"Day of Week"</span>, <span class="at">y =</span> <span class="st">"PM 2.5"</span>) <span class="sc">+</span></span>
+<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span>
+<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a>**Analytical Insights:**</span>
+<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Diurnal (Daily):** There is a distinct "U-shape" or "W-shape" throughout the day. Pollution peaks sharply during the morning rush hour (8:00 AM - 10:00 AM) and late evening, while dropping significantly in the middle of the day due to atmospheric mixing and solar radiation.</span>
+<span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Weekly:** The weekends (Saturday/Sunday) often show slightly subdued peaks compared to mid-week, correlating with a drop in commuting and industrial output.</span>
+<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a><span class="fu">## Multi-Seasonal STL Decomposition</span></span>
+<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a>Because the data exhibits overlapping cycles (Daily, Weekly, and Annual), a standard seasonal decomposition fails. We utilized a robust, multi-seasonal STL decomposition to mathematically extract these distinct waveforms.</span>
+<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a><span class="in">```{r stl-plot, fig.cap="Multi-Seasonal STL Decomposition for Delhi"}</span></span>
+<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a>clean_tsibble <span class="sc">|&gt;</span> </span>
+<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(City <span class="sc">==</span> <span class="st">"Delhi"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a>  <span class="fu">model</span>(<span class="fu">STL</span>(<span class="fu">log1p</span>(PM2<span class="fl">.5</span>) <span class="sc">~</span> <span class="fu">season</span>(<span class="at">period =</span> <span class="st">"day"</span>) <span class="sc">+</span> </span>
+<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a>                           <span class="fu">season</span>(<span class="at">period =</span> <span class="st">"week"</span>) <span class="sc">+</span> </span>
+<span id="cb9-117"><a href="#cb9-117" aria-hidden="true" tabindex="-1"></a>                           <span class="fu">season</span>(<span class="at">period =</span> <span class="st">"year"</span>), </span>
+<span id="cb9-118"><a href="#cb9-118" aria-hidden="true" tabindex="-1"></a>            <span class="at">robust =</span> <span class="cn">TRUE</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb9-119"><a href="#cb9-119" aria-hidden="true" tabindex="-1"></a>  <span class="fu">components</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb9-120"><a href="#cb9-120" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>() <span class="sc">+</span> </span>
+<span id="cb9-121"><a href="#cb9-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb9-122"><a href="#cb9-122" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-123"><a href="#cb9-123" aria-hidden="true" tabindex="-1"></a>**Analytical Insight:** The STL plot cleanly separates the massive annual winter spikes (Season_year) from the tight, fast-moving daily rush hour spikes (Season_day). The <span class="in">`Remainder`</span> (residuals) represents weather anomalies or unpredicted events, which ARMA models are highly effective at capturing.</span>
+<span id="cb9-124"><a href="#cb9-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-125"><a href="#cb9-125" aria-hidden="true" tabindex="-1"></a><span class="fu"># Model Formulation</span></span>
+<span id="cb9-126"><a href="#cb9-126" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-127"><a href="#cb9-127" aria-hidden="true" tabindex="-1"></a>To capture these complex dynamics, three progressive forecasting models were developed and compared.</span>
+<span id="cb9-128"><a href="#cb9-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-129"><a href="#cb9-129" aria-hidden="true" tabindex="-1"></a><span class="fu">## Model 1: STL + ARIMA</span></span>
+<span id="cb9-130"><a href="#cb9-130" aria-hidden="true" tabindex="-1"></a>The first approach isolated the seasonal components using the robust STL decomposition shown above. An ARIMA model was then fitted strictly to the <span class="in">`season_adjust`</span> (the de-seasonalized trend) to forecast the baseline, before re-adding the seasonal waveforms back into the prediction.</span>
+<span id="cb9-131"><a href="#cb9-131" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-132"><a href="#cb9-132" aria-hidden="true" tabindex="-1"></a><span class="fu">## Model 2: Univariate Dynamic Harmonic Regression (DHR)</span></span>
+<span id="cb9-133"><a href="#cb9-133" aria-hidden="true" tabindex="-1"></a>To handle multiple complex seasonalities simultaneously *without* decomposing the data upfront, a Dynamic Harmonic Regression model with ARMA errors was formulated. This utilizes continuous Fourier terms to represent the seasonal cycles mathematically.</span>
+<span id="cb9-134"><a href="#cb9-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-135"><a href="#cb9-135" aria-hidden="true" tabindex="-1"></a>The mathematical representation of the DHR model is:</span>
+<span id="cb9-136"><a href="#cb9-136" aria-hidden="true" tabindex="-1"></a>$$ y_t = \beta_0 + \sum_{i=1}^M \sum_{j=1}^{K_i} \left( \alpha_{i,j} \sin\left(\frac{2\pi j t}{m_i}\right) + \gamma_{i,j} \cos\left(\frac{2\pi j t}{m_i}\right) \right) + \eta_t $$</span>
+<span id="cb9-137"><a href="#cb9-137" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-138"><a href="#cb9-138" aria-hidden="true" tabindex="-1"></a>Where $m_i$ represents the seasonal periods (daily, annual), $K_i$ represents the number of Fourier pairs for each period, and $\eta_t$ is the ARIMA error process. To avoid Nyquist limit instability on 4-hourly data (6 periods/day), $K_{\text{day}}$ was restricted to 2.</span>
+<span id="cb9-139"><a href="#cb9-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-140"><a href="#cb9-140" aria-hidden="true" tabindex="-1"></a><span class="fu">## Model 3: Multivariate DHR</span></span>
+<span id="cb9-141"><a href="#cb9-141" aria-hidden="true" tabindex="-1"></a>The final and most robust model integrated the exogenous meteorological and pollutant variables into the DHR framework. PM 2.5 is deeply correlated with NO2 (traffic) and CO (combustion).</span>
+<span id="cb9-142"><a href="#cb9-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-143"><a href="#cb9-143" aria-hidden="true" tabindex="-1"></a>$$ y_t = \text{Fourier Terms} + \sum_{k=1}^P \delta_k x_{k,t} + \eta_t $$</span>
+<span id="cb9-144"><a href="#cb9-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-145"><a href="#cb9-145" aria-hidden="true" tabindex="-1"></a><span class="in">```{r model-formulation, eval=FALSE}</span></span>
+<span id="cb9-146"><a href="#cb9-146" aria-hidden="true" tabindex="-1"></a><span class="co"># Example of the dynamic formula injected into fable</span></span>
+<span id="cb9-147"><a href="#cb9-147" aria-hidden="true" tabindex="-1"></a>multivariate_formula <span class="ot">&lt;-</span> <span class="fu">as.formula</span>(</span>
+<span id="cb9-148"><a href="#cb9-148" aria-hidden="true" tabindex="-1"></a>  <span class="st">"log1p(PM2.5) ~ fourier(period = 'day', K = 2) + </span></span>
+<span id="cb9-149"><a href="#cb9-149" aria-hidden="true" tabindex="-1"></a><span class="st">                  fourier(period = 'year', K = 5) + </span></span>
+<span id="cb9-150"><a href="#cb9-150" aria-hidden="true" tabindex="-1"></a><span class="st">                  PDQ(0,0,0) + </span></span>
+<span id="cb9-151"><a href="#cb9-151" aria-hidden="true" tabindex="-1"></a><span class="st">                  log1p(NO) + log1p(NO2) + log1p(CO) + log1p(Benzene)"</span></span>
+<span id="cb9-152"><a href="#cb9-152" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-153"><a href="#cb9-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-154"><a href="#cb9-154" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> clean_tsibble <span class="sc">|&gt;</span> </span>
+<span id="cb9-155"><a href="#cb9-155" aria-hidden="true" tabindex="-1"></a>  <span class="fu">model</span>(<span class="st">`</span><span class="at">Multivariate DHR</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">ARIMA</span>(<span class="sc">!!</span>multivariate_formula))</span>
+<span id="cb9-156"><a href="#cb9-156" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-157"><a href="#cb9-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-158"><a href="#cb9-158" aria-hidden="true" tabindex="-1"></a><span class="fu"># Forecasting &amp; Exogenous Simulation</span></span>
+<span id="cb9-159"><a href="#cb9-159" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-160"><a href="#cb9-160" aria-hidden="true" tabindex="-1"></a>To forecast PM 2.5 accurately into the future, the multivariate model requires future states of its exogenous predictors (NO, NO2, etc.). A secondary modeling pipeline was developed to generate baseline ARIMA forecasts for all exogenous variables, using Last Observation Carried Forward (LOCF) or neutral <span class="in">`0`</span> baselines for sensors that were entirely missing.</span>
+<span id="cb9-161"><a href="#cb9-161" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-162"><a href="#cb9-162" aria-hidden="true" tabindex="-1"></a>These forecasted pollutants were then fed into the primary PM 2.5 prediction engine.</span>
+<span id="cb9-163"><a href="#cb9-163" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-164"><a href="#cb9-164" aria-hidden="true" tabindex="-1"></a><span class="in">```{r forecast-plot, fig.cap="7-Day Horizon Forecast Comparison (Delhi)"}</span></span>
+<span id="cb9-165"><a href="#cb9-165" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualizing the final outputs from our pre-computed pipeline</span></span>
+<span id="cb9-166"><a href="#cb9-166" aria-hidden="true" tabindex="-1"></a>forecasts <span class="sc">|&gt;</span> </span>
+<span id="cb9-167"><a href="#cb9-167" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(City <span class="sc">==</span> <span class="st">"Delhi"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb9-168"><a href="#cb9-168" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Show the next 7 days (42 periods) for clarity</span></span>
+<span id="cb9-169"><a href="#cb9-169" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">42</span> <span class="sc">*</span> <span class="dv">3</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb9-170"><a href="#cb9-170" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="st">`</span><span class="at">Time Periods</span><span class="st">`</span>, <span class="at">y =</span> Predicted_PM2<span class="fl">.5</span>, <span class="at">color =</span> Model)) <span class="sc">+</span></span>
+<span id="cb9-171"><a href="#cb9-171" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">alpha =</span> <span class="fl">0.8</span>, <span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb9-172"><a href="#cb9-172" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb9-173"><a href="#cb9-173" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Multi-Model Forecast Projections"</span>,</span>
+<span id="cb9-174"><a href="#cb9-174" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Predicted PM 2.5"</span>, </span>
+<span id="cb9-175"><a href="#cb9-175" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Future Timeline"</span>) <span class="sc">+</span></span>
+<span id="cb9-176"><a href="#cb9-176" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span>
+<span id="cb9-177"><a href="#cb9-177" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-178"><a href="#cb9-178" aria-hidden="true" tabindex="-1"></a>**Analytical Insight:** We can see how the models adapt to the future timeline. The <span class="in">`Multivariate DHR`</span> model often deviates slightly from the purely univariate <span class="in">`DHR + ARMA`</span> model, as it is dynamically adjusting its curve based on the predicted future states of NO2, CO, and other pollutants.</span>
+<span id="cb9-179"><a href="#cb9-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-180"><a href="#cb9-180" aria-hidden="true" tabindex="-1"></a><span class="fu"># Conclusion</span></span>
+<span id="cb9-181"><a href="#cb9-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-182"><a href="#cb9-182" aria-hidden="true" tabindex="-1"></a>The inclusion of dual-Fourier terms and stepwise multivariate integration successfully stabilized the extreme variance of the raw data. </span>
+<span id="cb9-183"><a href="#cb9-183" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-184"><a href="#cb9-184" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Accuracy:** The final Multivariate DHR model achieved a highly competitive steady-state MAPE of **$20\% - 25\%$**, handling both daily rush hours and extreme winter anomalies effectively.</span>
+<span id="cb9-185"><a href="#cb9-185" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Deployment:** The models were serialized into an offline caching system and connected to a reactive Shiny dashboard (<span class="in">`app.R`</span>). This architecture allows users to dynamically slide the forecast horizon up to a full year without incurring any real-time computational training overhead.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -82,20 +82,20 @@ clean_tsibble |>
 Using `feasts::gg_season()`, we can overlap the data to isolate specific time frames. 
 
 ```{r seasonal-plots, fig.cap="Daily and Weekly Seasonality Patterns", layout.ncol=2}
-# Filtering to a recent 3-month window to see intra-day and intra-week patterns cleanly
-recent_delhi <- clean_tsibble |> 
-  filter(City == "Delhi") |> 
-  tail(504) # 12 weeks of 4-hourly data
+# Filtering to recent, smaller windows to prevent line-clutter
+delhi_data <- clean_tsibble |> filter(City == "Delhi")
 
-# Daily Pattern
-recent_delhi |> 
+# Daily Pattern (Last 14 days)
+delhi_data |> 
+  tail(84) |> # 14 days * 6 obs/day
   gg_season(PM2.5, period = "day") +
   labs(title = "Diurnal (Daily) Cycle", x = "Time of Day", y = "PM 2.5") +
   theme_minimal() +
   theme(legend.position = "none")
 
-# Weekly Pattern
-recent_delhi |> 
+# Weekly Pattern (Last 4 weeks)
+delhi_data |> 
+  tail(168) |> # 4 weeks * 42 obs/week
   gg_season(PM2.5, period = "week") +
   labs(title = "Weekly Cycle", x = "Day of Week", y = "PM 2.5") +
   theme_minimal() +
