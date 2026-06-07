@@ -3,68 +3,90 @@ library(tidyverse)
 library(tsibble)
 library(fable)
 library(feasts)
+library(rlang) # Required for the !! formula injection
 
 clean_tsibble <- readRDS("data/processed/clean_tsibble.rds")
 
-# Identify potential exogenous variables available in the dataset (excluding our grouping/index vars)
+# 1. Identify numerical exogenous variables (excluding indices and target)
 exog_vars <- setdiff(names(clean_tsibble), c("State", "City", "Time Periods", "PM2.5"))
+num_vars <- clean_tsibble %>% 
+  as_tibble() %>% 
+  select(all_of(exog_vars)) %>% 
+  select(where(is.numeric)) %>% 
+  names()
 
-# We construct the formula dynamically based on available exogenous variables.
-# If 'Temp' is available from our mock, or 'NOx', 'CO' etc. from the real data.
-if (length(exog_vars) > 0) {
-  # Take the first available exogenous variable for the multivariate model to ensure it runs
-  # Ideally, we would use all, but for robustness across mock/real data, we use the first valid one.
-  # We will use all numeric exogenous variables that have variance.
-  num_vars <- clean_tsibble %>% 
-    as_tibble() %>% 
-    select(all_of(exog_vars)) %>% 
-    select(where(is.numeric)) %>% 
-    names()
-    
-  if(length(num_vars) > 0) {
-    exog_formula_str <- paste(num_vars[1:min(3, length(num_vars))], collapse = " + ")
-  } else {
-    exog_formula_str <- "1" # Fallback
-  }
+# 2. Dynamically build the Multivariate Formula
+if(length(num_vars) > 0) {
+  # FIX: Wrap num_vars in backticks to handle spaces and special characters safely
+  exog_formula_str <- paste0("log(`", num_vars, "` + 1)", collapse = " + ")
 } else {
   exog_formula_str <- "1"
 }
 
-formula_str <- paste("log(PM2.5 + 1) ~ fourier(period = 'day', K = 2) + pdq(d=0) +", exog_formula_str)
+# FIX: Wrap PM2.5 in backticks as well, just to be safe
+formula_str <- paste("log(`PM2.5` + 1) ~ fourier(period = 'day', K = 3) +", 
+                     "fourier(period = 'year', K = 5) + pdq(d=0) + PDQ(0,0,0) +", 
+                     exog_formula_str)
 
-# Train the three models specified in the user's attempt
+# Create the actual formula object BEFORE passing it to fable
+multivariate_formula <- as.formula(formula_str)
+
+cat("Training models...\n")
+
+# 3. Train the Models
 models <- clean_tsibble %>%
   model(
-    # 1. Univariate: STL decomposition with ARIMA on seasonally adjusted data
+    # Model 1: STL decomposition with ARIMA on seasonally adjusted data
     `STL + ARIMA` = decomposition_model(
-      STL(log(PM2.5 + 1) ~ season(period = "day"), robust = TRUE),
-      ARIMA(season_adjust)
+      STL(log(`PM2.5` + 1) ~ season(period = "day") + season(period = "year"), robust = TRUE),
+      ARIMA(season_adjust ~ pdq(d=0) + PDQ(0,0,0))
     ),
     
-    # 2. Univariate: Dynamic Harmonic Regression with ARMA errors
-    `DHR + ARMA` = ARIMA(log(PM2.5 + 1) ~ fourier(period = "day", K = 2) + pdq(d=0)),
+    # Model 2: Univariate Dynamic Harmonic Regression with ARMA errors
+    `DHR + ARMA` = ARIMA(log(`PM2.5` + 1) ~ fourier(period = "day", K = 3) + 
+                                          fourier(period = "year", K = 5) + 
+                                          pdq(d=0) + PDQ(0,0,0)),
     
-    # 3. Multivariate: Stepwise regression combined with Dynamic Harmonic Regression with ARMA errors
-    `Multivariate DHR` = ARIMA(as.formula(formula_str))
+    # Model 3: Multivariate Dynamic Harmonic Regression with ARMA errors
+    # Use !! to inject the dynamically built formula
+    `Multivariate DHR` = ARIMA(!!multivariate_formula)
   )
 
-# For forecasting the multivariate model, we need future values of the exogenous predictors.
-# We will use the naive method (carrying forward the last observed value) for simplicity in this structural pipeline.
+# 4. Prepare Future Data for Forecasting
 future_data <- new_data(clean_tsibble, 18)
 
-if (exog_formula_str != "1") {
-  last_obs <- clean_tsibble %>%
-    as_tibble() %>%
-    group_by(State, City) %>%
-    slice_tail(n = 1) %>%
-    select(State, City, all_of(num_vars))
+if (length(num_vars) > 0) {
+  cat("Forecasting exogenous variables to feed the Multivariate model...\n")
+  
+  future_exog_list <- list()
+  
+  for (var in num_vars) {
+    # FIX: Dynamically build and inject the formula with backticks
+    var_formula <- as.formula(paste0("log(`", var, "` + 1) ~ fourier(period = 'day', K = 3) + pdq(d=0) + PDQ(0,0,0)"))
     
-  future_data <- future_data %>%
-    left_join(last_obs, by = c("State", "City")) %>%
-    as_tsibble(key = c(State, City), index = `Time Periods`)
+    exog_fc <- clean_tsibble %>%
+      model(mod = ARIMA(!!var_formula)) %>%
+      forecast(h = 18) %>%
+      as_tibble() %>%
+      select(State, City, `Time Periods`, .mean)
+    
+    # FIX: Fable automatically back-transforms log(y+1). .mean is already on the original scale.
+    exog_fc[[var]] <- pmax(0, exog_fc$.mean)
+    exog_fc$.mean <- NULL
+    
+    future_exog_list[[var]] <- exog_fc
+  }
+  
+  # Join all forecasted exogenous variables back into our future_data tsibble
+  for (var in num_vars) {
+    future_data <- future_data %>%
+      left_join(future_exog_list[[var]], by = c("State", "City", "Time Periods"))
+  }
 }
 
-# Generate 3-day forecast (18 periods of 4 hours)
+cat("Generating 3-day PM 2.5 forecasts...\n")
+
+# 5. Generate Forecasts
 forecasts <- models %>%
   forecast(new_data = future_data) %>%
   as_tibble() %>%
@@ -72,10 +94,12 @@ forecasts <- models %>%
   rename(
     Model = .model,
     Predicted_PM2.5 = .mean
-  )
+  ) %>%
+  # FIX: Fable automatically back-transforms the target. Just bound at 0 to prevent negatives.
+  mutate(Predicted_PM2.5 = pmax(0, Predicted_PM2.5))
 
-# Save the trained models for offline inspection
+# 6. Save outputs
 saveRDS(models, "data/processed/models.rds")
-
-# Save the forecasts for the Shiny App
 saveRDS(forecasts, "app/data/forecasts.rds")
+
+cat("Modeling pipeline complete.\n")

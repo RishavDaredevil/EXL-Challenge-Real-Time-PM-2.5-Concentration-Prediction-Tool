@@ -1,19 +1,21 @@
 # app/app.R
 library(shiny)
 library(bslib)
-library(tidyverse)
+library(fpp3)
 library(plotly)
 
 # Load pre-computed data
-eda_summaries <- readRDS("data/eda_summaries.rds")
+eda_features <- readRDS("data/eda_features.rds")
+stl_components <- readRDS("data/stl_components.rds")
 forecasts <- readRDS("data/forecasts.rds")
+clean_tsibble <- readRDS("../data/processed/clean_tsibble.rds")
 
 ui <- page_navbar(
   title = "EXL PM 2.5 Real-Time Predictor",
   theme = bs_theme(version = 5, bootswatch = "flatly"),
   
   sidebar = sidebar(
-    selectInput("city", "Select City:", choices = unique(eda_summaries$City)),
+    selectInput("city", "Select City:", choices = unique(eda_features$City)),
     selectInput("model", "Select Model Forecast:", choices = unique(forecasts$Model)),
     helpText("Select a city to view historical EDA and upcoming 3-day forecasts.")
   ),
@@ -26,9 +28,19 @@ ui <- page_navbar(
   ),
   
   nav_panel("EDA",
-    card(
-      card_header("City Statistics"),
-      tableOutput("stats_table")
+    navset_card_tab(
+      nav_panel("Advanced Statistics",
+        tableOutput("stats_table")
+      ),
+      nav_panel("Time Plot",
+        plotOutput("time_plot")
+      ),
+      nav_panel("Seasonal Plots",
+        plotOutput("season_plot")
+      ),
+      nav_panel("STL Decomposition",
+        plotOutput("stl_plot")
+      )
     )
   ),
   
@@ -43,7 +55,31 @@ ui <- page_navbar(
 server <- function(input, output, session) {
   
   output$stats_table <- renderTable({
-    eda_summaries %>% filter(City == input$city)
+    eda_features %>% filter(City == input$city)
+  })
+  
+  output$time_plot <- renderPlot({
+    clean_tsibble %>% 
+      filter(City == input$city) %>% 
+      autoplot(PM2.5) +
+      labs(title = paste("PM 2.5 over Time in", input$city), x = "Time", y = "PM 2.5") +
+      theme_minimal()
+  })
+  
+  output$season_plot <- renderPlot({
+    clean_tsibble %>% 
+      filter(City == input$city) %>% 
+      gg_season(PM2.5, period = "day") +
+      labs(title = paste("Daily Seasonal Plot of PM 2.5 in", input$city), x = "Time of Day", y = "PM 2.5") +
+      theme_minimal()
+  })
+  
+  output$stl_plot <- renderPlot({
+    stl_components %>% 
+      filter(City == input$city) %>% 
+      autoplot() +
+      labs(title = paste("STL Decomposition of PM 2.5 in", input$city)) +
+      theme_minimal()
   })
   
   output$forecast_plot <- renderPlotly({
