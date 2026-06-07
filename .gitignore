@@ -1,0 +1,10 @@
+.RData
+.Rhistory
+*.Rproj
+.Rproj.user
+data/raw/
+data/processed/
+.venv/
+__pycache__/
+*.xlsm
+*.rds
