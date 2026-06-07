@@ -3,7 +3,6 @@ library(shiny)
 library(bslib)
 library(fpp3)
 library(plotly)
-library(DT)
 
 # Load pre-computed data
 eda_features <- readRDS("data/eda_features.rds")
@@ -59,9 +58,9 @@ By combining robust seasonal decomposition with exogenous variable forecasting, 
     navset_card_tab(
       nav_panel("Advanced Statistics",
         navset_pill(
-          nav_panel("Basic Metrics", DTOutput("stats_basic")),
-          nav_panel("Trend & Seasonality (STL)", DTOutput("stats_stl")),
-          nav_panel("Autocorrelation (ACF)", DTOutput("stats_acf"))
+          nav_panel("Basic Metrics", tableOutput("stats_basic")),
+          nav_panel("Trend & Seasonality (STL)", tableOutput("stats_stl")),
+          nav_panel("Autocorrelation (ACF)", tableOutput("stats_acf"))
         )
       ),
       nav_panel("Time Plot",
@@ -99,44 +98,35 @@ server <- function(input, output, session) {
     updateSliderInput(session, "horizon_slider", value = input$horizon_num)
   })
   
-  # --- Advanced Statistics Tables (Grouped & Interactive) ---
+  # --- Advanced Statistics Tables (Grouped) ---
   
   city_features <- reactive({
     eda_features %>% filter(City == input$city)
   })
   
   # Group 1: Basic Metrics
-  output$stats_basic <- renderDT({
+  output$stats_basic <- renderTable({
     req(nrow(city_features()) > 0)
     city_features() %>%
       select(starts_with("Mean_"), starts_with("Median_"), starts_with("Max_"), starts_with("P90_")) %>%
-      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value") %>%
-      datatable(options = list(dom = 't', paging = FALSE), 
-                class = 'cell-border stripe hover', rownames = FALSE) %>%
-      formatRound(columns = "Value", digits = 2)
-  })
+      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value")
+  }, digits = 2, striped = TRUE, hover = TRUE, bordered = TRUE)
   
   # Group 2: STL Features (Trend and Seasonality strength)
-  output$stats_stl <- renderDT({
+  output$stats_stl <- renderTable({
     req(nrow(city_features()) > 0)
     city_features() %>%
       select(contains("strength"), contains("peak"), contains("trough"), spikiness, linearity, curvature) %>%
-      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value") %>%
-      datatable(options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
-                class = 'cell-border stripe hover', rownames = FALSE) %>%
-      formatRound(columns = "Value", digits = 3)
-  })
+      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value")
+  }, digits = 3, striped = TRUE, hover = TRUE, bordered = TRUE)
   
   # Group 3: ACF Features (Autocorrelation)
-  output$stats_acf <- renderDT({
+  output$stats_acf <- renderTable({
     req(nrow(city_features()) > 0)
     city_features() %>%
       select(contains("acf")) %>%
-      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value") %>%
-      datatable(options = list(dom = 't', paging = FALSE, scrollX = TRUE), 
-                class = 'cell-border stripe hover', rownames = FALSE) %>%
-      formatRound(columns = "Value", digits = 3)
-  })
+      pivot_longer(cols = everything(), names_to = "Metric", values_to = "Value")
+  }, digits = 3, striped = TRUE, hover = TRUE, bordered = TRUE)
   
   # --- Interactive Plots ---
   
