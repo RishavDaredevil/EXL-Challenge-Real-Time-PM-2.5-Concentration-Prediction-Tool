@@ -66,10 +66,25 @@ if (length(available_exog) > 0) {
     exog_models[[var]] <- mod
     
     # Forecast each exogenous variable smoothly
-    exog_fc <- mod %>%
-      forecast(h = 2190) %>%
-      as_tibble() %>%
-      select(State, City, `Time Periods`, .mean)
+    exog_fc <- suppressWarnings({
+      mod %>%
+        forecast(h = 2190) %>%
+        as_tibble() %>%
+        select(State, City, `Time Periods`, .mean)
+    })
+    
+    # Get the last known non-NA value for this variable per city
+    last_vals <- clean_tsibble %>% 
+      as_tibble() %>% 
+      group_by(City) %>% 
+      # Supress warnings if all values are NA
+      summarise(last_val = suppressWarnings(last(na.omit(!!sym(var)))), .groups="drop")
+    
+    exog_fc <- exog_fc %>%
+      left_join(last_vals, by = "City") %>%
+      # If forecast is NA, use last known value. If that is NA (100% missing data), use 0.
+      mutate(.mean = coalesce(.mean, last_val, 0)) %>%
+      select(-last_val)
     
     # fable handles back-transformation of log1p. 
     # We just assign the mean and bound it at 0.
