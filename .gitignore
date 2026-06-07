@@ -23,3 +23,4 @@ uv.lock
 
 # Shinylive static build artifacts
 docs/shinylive_app/
+app/rsconnect/
