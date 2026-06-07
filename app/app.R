@@ -189,6 +189,7 @@ server <- function(input, output, session) {
     
     city_forecast <- forecasts %>% 
       filter(City == input$city, Model == input$model) %>%
+      arrange(`Time Periods`) %>%
       head(req_periods)
     
     p <- ggplot(city_forecast, aes(x = `Time Periods`, y = Predicted_PM2.5)) +
