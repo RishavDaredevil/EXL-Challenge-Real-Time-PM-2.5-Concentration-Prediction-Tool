@@ -20,3 +20,6 @@ desktop.ini
 main.py
 pyproject.toml
 uv.lock
+
+# Shinylive static build artifacts
+docs/shinylive_app/
