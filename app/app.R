@@ -69,8 +69,8 @@ By combining robust seasonal decomposition with exogenous variable forecasting, 
       ),
       nav_panel("Seasonal Plots",
         navset_pill(
-          nav_panel("Daily Pattern (Month)", plotlyOutput("season_plot_daily")),
-          nav_panel("Weekly Pattern (3 Months)", plotlyOutput("season_plot_weekly")),
+          nav_panel("Daily Pattern (14 Days)", plotlyOutput("season_plot_daily")),
+          nav_panel("Weekly Pattern (4 Weeks)", plotlyOutput("season_plot_weekly")),
           nav_panel("Annual Pattern", plotlyOutput("season_plot_annual"))
         )
       ),
@@ -149,29 +149,29 @@ server <- function(input, output, session) {
     ggplotly(p)
   })
   
-  # Seasonal Plot 1: Daily Pattern (Filtered to a recent month to avoid crisscrossing mess)
+  # Seasonal Plot 1: Daily Pattern (Filtered to a recent 14 days to avoid crisscrossing mess)
   output$season_plot_daily <- renderPlotly({
     recent_data <- clean_tsibble %>% 
       filter(City == input$city) %>%
-      tail(180) # 30 days * 6 obs/day
+      tail(84) # 14 days * 6 obs/day
       
     p <- recent_data %>% 
       gg_season(PM2.5, period = "day") +
-      labs(title = "Daily Pattern (Last 30 Days)", x = "Time of Day", y = "PM 2.5") +
+      labs(title = "Daily Pattern (Last 14 Days)", x = "Time of Day", y = "PM 2.5") +
       theme_minimal() +
       theme(legend.position = "none") 
     ggplotly(p)
   })
   
-  # Seasonal Plot 2: Weekly Pattern (Filtered to recent 3 months)
+  # Seasonal Plot 2: Weekly Pattern (Filtered to recent 4 weeks)
   output$season_plot_weekly <- renderPlotly({
     recent_data <- clean_tsibble %>% 
       filter(City == input$city) %>%
-      tail(504) # 12 weeks * 42 obs/week
+      tail(168) # 4 weeks * 42 obs/week
       
     p <- recent_data %>% 
       gg_season(PM2.5, period = "week") +
-      labs(title = "Weekly Pattern (Last 12 Weeks)", x = "Day of Week", y = "PM 2.5") +
+      labs(title = "Weekly Pattern (Last 4 Weeks)", x = "Day of Week", y = "PM 2.5") +
       theme_minimal() +
       theme(legend.position = "none")
     ggplotly(p)
