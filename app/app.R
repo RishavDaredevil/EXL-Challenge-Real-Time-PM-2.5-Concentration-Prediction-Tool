@@ -48,6 +48,10 @@ ui <- page_navbar(
 **Key Results:**
 By combining robust seasonal decomposition with exogenous variable forecasting, the final Multivariate DHR model achieved a **Mean Absolute Percentage Error (MAPE) of approximately 20-25%**, providing highly actionable insights into upcoming hazardous air quality periods.
 
+**Project Links:**
+* 📖 **[Research Methodology Report (Quarto)](https://rishavdaredevil.github.io/EXL-Challenge-Real-Time-PM-2.5-Concentration-Prediction-Tool/reports/research_methodology.html)** - A comprehensive breakdown of the mathematics, data engineering, and EDA behind these models.
+* 💻 **[GitHub Repository](https://github.com/RishavDaredevil/EXL-Challenge-Real-Time-PM-2.5-Concentration-Prediction-Tool)** - View the full source code and pipeline scripts.
+
 **Tech Stack:**
 `R` | `Tidyverse` | `Tidymodels` | `Tsibble` | `Fable` | `Shiny` | `bslib`
         ")
